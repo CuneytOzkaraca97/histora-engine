@@ -1,0 +1,7 @@
+<html><body style="margin:0"><canvas id="c" width="2100" height="1000"></canvas>
+<script type="module">
+import { drawEra, ORDER } from "./eras.js";
+const g=document.getElementById('c').getContext('2d'); g.fillStyle="#f3e6c8"; g.fillRect(0,0,2100,1000);
+ORDER.forEach((k,i)=>{ g.save(); g.translate(i*300,0); g.scale(0.5,0.5); g.translate(0,900); drawEra(g,k,{expr:["grin","smile","stern","neutral","grin","smile","shock"][i],wave:i%2?0.8:undefined}); g.restore(); });
+window.done=true;
+</script></body></html>

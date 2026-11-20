@@ -1,0 +1,72 @@
+<html><head><meta charset="utf-8"></head><body style="margin:0"><canvas id="c" width="800" height="800"></canvas>
+<script type="module">
+const idx=+new URLSearchParams(location.search).get('i');
+const cv=document.getElementById('c'), g=cv.getContext('2d'); const C=400, TAU=Math.PI*2;
+for(const [n,f] of [["Cinzel","cinzel"]]){const ff=new FontFace(n,`url(fonts/${f}.woff2)`); await ff.load(); document.fonts.add(ff);}
+const MET={
+  gold:{hi:"#FBE7A6",mid:"#D9AA48",lo:"#9A6E22",dk:"#6E4C12",relief:"#F2CF72",bg:"#2C2420"},
+  silver:{hi:"#FFFFFF",mid:"#C9CFD6",lo:"#7E8790",dk:"#4C535B",relief:"#E8ECF0",bg:"#1E2630"},
+  bronze:{hi:"#F6C08C",mid:"#C07A3E",lo:"#7A4520",dk:"#4E2A12",relief:"#E59A5A",bg:"#2A1C14"},
+  obsidian:{hi:"#5A5A68",mid:"#2E2E38",lo:"#16161C",dk:"#0C0C10",relief:"#E8C374",bg:"#0F1A2E"},
+};
+const path=(pts,close=true)=>{g.beginPath();pts.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));if(close)g.closePath();};
+const T=(pts,sx,sy,ox,oy,flip=false)=>pts.map(([x,y])=>[ox+(flip?-x:x)*sx,oy+y*sy]);
+// ---- wolf shapes (local coords) ----
+const HEAD_SIDE=[[270,600],[262,500],[268,420],[290,350],[318,300],[330,190],[372,262],[392,250],[400,150],[440,250],[470,262],[520,300],[600,340],[640,362],[646,384],[630,396],[590,400],[560,414],[520,420],[540,440],[506,452],[470,454],[488,480],[456,486],[474,512],[440,516],[456,548],[420,552],[434,586],[396,588],[400,620],[350,612]];
+const HEAD_SIDE_OLD=[[290,560],[285,470],[300,380],[330,330],[350,215],[395,300],[430,300],[470,322],[560,360],[600,385],[596,405],[545,420],[505,440],[472,452],[452,480],[472,500],[440,506],[462,532],[430,537],[452,566],[410,566],[382,592],[350,585],[322,577]];
+const HOWL_OLD=[[90,395],[60,392],[30,380],[45,370],[80,362],[100,330],[110,280],[130,230],[150,190],[165,160],[175,120],[185,85],[190,60],[200,28],[212,62],[225,55],[258,26],[272,10],[280,22],[262,42],[266,50],[242,64],[230,82],[222,110],[232,128],[218,140],[227,160],[214,176],[215,230],[210,300],[212,382],[236,394],[188,396],[188,320],[170,330],[160,380],[176,394],[120,396]];
+const HOWL=[[40,392],[70,370],[110,360],[130,330],[128,290],[140,250],[165,205],[185,170],[195,135],[200,105],[205,82],[198,42],[214,6],[230,46],[244,50],[270,28],[298,4],[306,14],[292,32],[284,36],[298,44],[272,66],[254,80],[260,100],[246,108],[258,126],[242,132],[252,152],[236,158],[240,210],[242,330],[246,380],[264,393],[214,395],[214,300],[198,252],[188,300],[192,382],[206,394],[168,395],[168,332],[150,362],[172,393],[110,395]];
+const WALK=[[40,190],[18,218],[48,203],[80,170],[120,150],[220,145],[270,140],[300,118],[318,94],[330,70],[338,42],[350,72],[365,80],[410,100],[428,110],[416,121],[380,126],[360,140],[345,170],[340,200],[346,260],[360,268],[332,271],[326,210],[310,205],[302,262],[314,269],[288,272],[285,210],[250,200],[180,200],[150,215],[160,262],[174,270],[148,272],[136,220],[116,215],[120,262],[130,270],[105,272],[95,215],[80,195]];
+const FRONT=(()=>{const h=[[-40,-120],[-128,-205],[-150,-60],[-185,-10],[-160,10],[-195,50],[-150,62],[-170,105],[-110,118],[-112,150],[-60,160],[0,190]]; return [...h,...h.slice(0,-1).reverse().map(([x,y])=>[-x,y])];})();
+let M;
+const coinBase=(m)=>{ M=MET[m];
+  g.fillStyle=M.bg; g.fillRect(0,0,800,800);
+  const gr=g.createRadialGradient(C-90,C-100,30,C,C,420); gr.addColorStop(0,M.hi); gr.addColorStop(0.55,M.mid); gr.addColorStop(1,M.lo); g.fillStyle=gr;
+  path(Array.from({length:91},(_,i)=>{const a=i*TAU/90,r=356+6*Math.sin(i*2.3)+4*Math.cos(i*5.1);return [C+Math.cos(a)*r,C+Math.sin(a)*r];})); g.fill();
+  g.beginPath(); g.arc(C,C,282,0,TAU); g.lineWidth=6; g.strokeStyle=M.lo; g.stroke();
+  for(let i=0;i<60;i++){const a=i*TAU/60; g.beginPath(); g.arc(C+Math.cos(a)*262,C+Math.sin(a)*262,3,0,TAU); g.fillStyle=M.lo; g.fill();}
+};
+const relief=(pts)=>{ g.save(); g.translate(7,9); path(pts); g.fillStyle=M.dk; g.globalAlpha=0.55; g.fill(); g.restore(); g.globalAlpha=1; path(pts); const b=pts.reduce((a,[x,y])=>[Math.min(a[0],x),Math.min(a[1],y),Math.max(a[2],x),Math.max(a[3],y)],[1e9,1e9,-1e9,-1e9]); const gr=g.createLinearGradient(b[0],b[1],b[2],b[3]); gr.addColorStop(0,M.hi); gr.addColorStop(1,M.relief); g.fillStyle=gr; g.fill(); g.lineWidth=7; g.strokeStyle=M.dk; g.lineJoin='round'; g.stroke(); };
+const line=(pts,w=4,col)=>{path(pts,false); g.lineWidth=w; g.strokeStyle=col||M.lo; g.lineCap="round"; g.lineJoin="round"; g.stroke();};
+const dot=(x,y,r,col)=>{g.beginPath(); g.arc(x,y,r,0,TAU); g.fillStyle=col; g.fill();};
+const ring=(t,r,size,top=true,col)=>{g.font=`900 ${size}px Cinzel`; g.fillStyle=col||M.dk; g.textAlign="center"; g.textBaseline="middle"; const ws=[...t].map(c=>g.measureText(c).width*1.18), tot=ws.reduce((a,b)=>a+b,0);
+  let a=top?-Math.PI/2-tot/r/2:Math.PI/2+tot/r/2; [...t].forEach((ch,i)=>{a+=(top?1:-1)*ws[i]/2/r; g.save(); g.translate(C+Math.cos(a)*r,C+Math.sin(a)*r); g.rotate(top?a+Math.PI/2:a-Math.PI/2); g.fillText(ch,0,0); g.restore(); a+=(top?1:-1)*ws[i]/2/r;});};
+const legend=(col)=>{ ring("HISTORA",314,54,true,col); ring("ORIGINALS",314,46,false,col); for(const a of [Math.PI,0]) dot(C+Math.cos(a)*314,C,8,col||M.dk); };
+const sideHead=(sx,sy,ox,oy,flip=false,detail=true)=>{ const P=T(HEAD_SIDE,sx,sy,ox,oy,flip); relief(P);
+  if(!detail) return; const t=(x,y)=>[ox+(flip?-x:x)*sx,oy+y*sy];
+  path([t(336,215),t(365,268),t(330,292)]); g.fillStyle=M.lo; g.fill(); path([t(404,175),t(432,248),t(400,255)]); g.fillStyle=M.lo; g.fill();
+  path([t(478,300),t(530,306),t(505,322)]); g.fillStyle=M.dk; g.fill();
+  line([t(470,290),t(540,300)],5,M.dk); line([t(630,396),t(560,404)],5,M.dk); path([t(632,356),t(648,372),t(636,386),t(620,372)]); g.fillStyle=M.dk; g.fill();
+  line([t(330,400),t(380,430),t(350,470)],4,M.lo); line([t(390,480),t(430,500)],4,M.lo); line([t(320,520),t(360,545)],4,M.lo); line([t(560,345),t(600,355)],3,M.lo); };
+const frontHead=(sc,ox,oy,lineArt=false,col)=>{ const P=T(FRONT,sc,sc,ox,oy);
+  if(lineArt){ path(P); g.lineWidth=7; g.strokeStyle=col; g.lineJoin="round"; g.stroke(); } else relief(P);
+  const c=lineArt?col:M.dk; for(const s of [-1,1]){ const f=s>0; path(T([[-50,-118],[-118,-180],[-128,-70]],sc,sc,ox,oy,f)); if(lineArt){g.lineWidth=5;g.strokeStyle=col;g.stroke();} else {g.fillStyle=M.lo; g.fill();}
+    path(T([[-92,-8],[-34,-24],[-46,6]],sc,sc,ox,oy,f)); g.fillStyle=c; g.fill(); line(T([[-122,-58],[-40,-30]],sc,sc,ox,oy,f),6,c); line(T([[-150,60],[-100,90]],sc,sc,ox,oy,f),4,lineArt?col:M.lo); }
+  path(T([[-58,30],[0,182],[58,30],[0,4]],sc,sc,ox,oy)); if(lineArt){g.lineWidth=5;g.strokeStyle=col;g.stroke();} else {g.fillStyle=M.hi; g.globalAlpha=0.75; g.fill(); g.globalAlpha=1; g.lineWidth=4; g.strokeStyle=M.lo; g.stroke();}
+  path(T([[-30,108],[30,108],[0,140]],sc,sc,ox,oy)); g.fillStyle=c; g.fill(); line(T([[0,-150],[0,-30]],sc,sc,ox,oy),4,lineArt?col:M.lo); };
+const laurel=(r,col,span=0.62)=>{ for(let i=0;i<12;i++){ for(const s of [1,-1]){ const a=Math.PI/2+s*(0.35+i*0.11); const x=C+Math.cos(a)*r,y=C+Math.sin(a)*r; g.save(); g.translate(x,y); g.rotate(a+s*0.9+Math.PI/2); g.beginPath(); g.ellipse(0,0,9,20,0,0,TAU); g.fillStyle=col; g.fill(); g.restore(); } } };
+const moon=(x,y,r)=>{ g.beginPath(); g.arc(x,y,r,0,TAU); g.fillStyle=M.relief; g.fill(); g.lineWidth=3; g.strokeStyle=M.lo; g.stroke(); g.beginPath(); g.arc(x+r*0.45,y-r*0.2,r*0.85,0,TAU); g.fillStyle=M.mid; g.fill(); };
+const star=(x,y,r,col)=>{ path(Array.from({length:10},(_,i)=>{const a=i*Math.PI/5-Math.PI/2, rr=i%2?r*0.42:r; return [x+Math.cos(a)*rr,y+Math.sin(a)*rr];})); g.fillStyle=col; g.fill(); };
+
+g.save(); g.beginPath(); g.arc(C,C,400,0,TAU); g.clip();
+const HW=(sx,sy,ox,oy)=>T(HOWL,sx,sy,ox,oy);
+const crown=(sc,ox,oy)=>{ for(let i=0;i<10;i++){ const dx=-108+i*24, y=oy+(-118+ (dx*dx)/260)*sc, x=ox+dx*sc; g.save(); g.translate(x,y); g.rotate((dx<0?-1:1)*0.9+dx/180); g.beginPath(); g.ellipse(0,0,10*sc,24*sc,0,0,TAU); g.fillStyle="#5F6B24"; g.fill(); g.lineWidth=3; g.strokeStyle=M.dk; g.stroke(); g.restore(); } };
+const helmet=(sc,ox,oy)=>{ g.save(); g.translate(ox,oy); g.scale(sc,sc); g.beginPath(); g.moveTo(-150,-60); g.bezierCurveTo(-150,-230,150,-230,150,-60); g.closePath(); g.fillStyle=M.hi; g.fill(); g.lineWidth=7; g.strokeStyle=M.dk; g.stroke();
+  g.fillStyle=M.lo; g.fillRect(-158,-72,316,22); g.strokeRect(-158,-72,316,22);
+  g.beginPath(); g.moveTo(-110,-170); g.bezierCurveTo(-60,-300,80,-300,130,-170); g.lineTo(90,-168); g.bezierCurveTo(60,-250,-30,-250,-70,-168); g.closePath(); g.fillStyle="#B8462F"; g.fill(); g.stroke();
+  for(const s of [-1,1]){ g.beginPath(); g.moveTo(s*150,-55); g.lineTo(s*160,40); g.lineTo(s*115,30); g.lineTo(s*112,-55); g.closePath(); g.fillStyle=M.hi; g.fill(); g.stroke(); } g.restore(); };
+switch(idx){
+  case 0: coinBase("gold"); moon(C+125,C-140,60); relief(HW(1.35,1.12,C-270,C-215)); legend(); break;
+  case 1: coinBase("gold"); frontHead(1.0,C,C+5); crown(1.0,C,C+5); legend(); break;
+  case 2: coinBase("silver"); frontHead(1.08,C,C-5); legend(); break;
+  case 3: coinBase("bronze"); for(let i=0;i<16;i++){const a=i*TAU/16; star(C+Math.cos(a)*232,C+Math.sin(a)*232,9,M.hi);} frontHead(0.95,C,C-5); legend(); break;
+  case 4: coinBase("gold"); g.beginPath(); g.arc(C,C-10,205,0,TAU); g.fillStyle=M.lo; g.globalAlpha=0.35; g.fill(); g.globalAlpha=1; for(const [x,y,r] of [[C-185,C-120,12],[C+190,C-110,10],[C-170,C+120,9],[C+175,C+130,11]]) star(x,y,r,M.hi); frontHead(0.95,C,C+10); legend(); break;
+  case 5: coinBase("silver"); moon(C+125,C-140,60); for(const [x,y] of [[C-170,C-150],[C+190,C+20],[C-140,C-40],[C+60,C-210]]) star(x,y,11,M.hi); relief(HW(1.35,1.12,C-270,C-215)); legend(); break;
+  case 6: coinBase("gold"); frontHead(1.0,C,C+25); helmet(0.95,C,C+25); legend(); break;
+  case 7: coinBase("obsidian"); frontHead(1.08,C,C-5,true,"#E8C374"); legend("#E8C374"); break;
+  case 8: coinBase("obsidian"); path(HW(1.35,1.12,C-270,C-215)); g.lineWidth=8; g.strokeStyle="#E8C374"; g.lineJoin="round"; g.stroke(); g.beginPath(); g.arc(C+125,C-140,58,0,TAU); g.lineWidth=6; g.stroke(); for(const [x,y] of [[C-170,C-150],[C+190,C+20],[C-120,C-60]]) star(x,y,10,"#E8C374"); legend("#E8C374"); break;
+  case 9: coinBase("gold"); laurel(222,"#6F7A2E"); relief(HW(1.1,0.92,C-222,C-190)); legend(); break;
+}
+g.restore();
+window.done=true;
+</script></body></html>

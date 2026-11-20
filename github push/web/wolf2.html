@@ -1,0 +1,95 @@
+<html><head><meta charset="utf-8"></head><body style="margin:0"><canvas id="c" width="800" height="800"></canvas>
+<script type="module">
+const idx=+new URLSearchParams(location.search).get('i');
+const cv=document.getElementById('c'), g=cv.getContext('2d'); const C=400, TAU=Math.PI*2;
+{const ff=new FontFace("Cinzel","url(fonts/cinzel.woff2)"); await ff.load(); document.fonts.add(ff);}
+let seed=7; const rnd=()=>{seed=(seed*16807)%2147483647; return seed/2147483647;};
+const path=(pts,close=true)=>{g.beginPath();pts.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));if(close)g.closePath();};
+const smoothPath=(pts)=>{ // closed Catmull-Rom through points
+  g.beginPath(); const n=pts.length; for(let i=0;i<n;i++){const p0=pts[(i-1+n)%n],p1=pts[i],p2=pts[(i+1)%n],p3=pts[(i+2)%n];
+    if(i===0) g.moveTo(p1[0],p1[1]); const t=0.5/3; g.bezierCurveTo(p1[0]+(p2[0]-p0[0])*t,p1[1]+(p2[1]-p0[1])*t,p2[0]-(p3[0]-p1[0])*t,p2[1]-(p3[1]-p1[1])*t,p2[0],p2[1]);} g.closePath(); };
+// sharp-cornered spikes: points flagged with '!' stay sharp: we use plain lines for spiky silhouettes
+const blade=(x0,y0,x1,y1,w,bend=0.25)=>{ // tapered slash from (x0,y0) wide to (x1,y1) point
+  const dx=x1-x0, dy=y1-y0, L=Math.hypot(dx,dy), nx=-dy/L, ny=dx/L, mx=x0+dx*0.5+nx*L*bend, my=y0+dy*0.5+ny*L*bend;
+  g.beginPath(); g.moveTo(x0+nx*w/2,y0+ny*w/2); g.quadraticCurveTo(mx+nx*w*0.35,my+ny*w*0.35,x1,y1); g.quadraticCurveTo(mx-nx*w*0.35,my-ny*w*0.35,x0-nx*w/2,y0-ny*w/2); g.closePath(); };
+const ring=(t,r,size,top,col)=>{g.font=`900 ${size}px Cinzel`; g.fillStyle=col; g.textAlign="center"; g.textBaseline="middle"; const ws=[...t].map(c=>g.measureText(c).width*1.2), tot=ws.reduce((a,b)=>a+b,0);
+  let a=top?-Math.PI/2-tot/r/2:Math.PI/2+tot/r/2; [...t].forEach((ch,i)=>{a+=(top?1:-1)*ws[i]/2/r; g.save(); g.translate(C+Math.cos(a)*r,C+Math.sin(a)*r); g.rotate(top?a+Math.PI/2:a-Math.PI/2); g.fillText(ch,0,0); g.restore(); a+=(top?1:-1)*ws[i]/2/r;});};
+
+// ---------- A: tribal side profile (facing left), gold silhouette with dark cut-outs ----------
+const SIDE=[[128,402],[146,384],[200,364],[262,346],[300,318],[338,292],[352,236],[392,104],[424,232],[452,262],[466,212],[506,112],[522,262],[560,300],[606,356],[660,412],[628,426],[694,494],[656,506],[704,578],[660,584],[690,652],[634,646],[628,712],[574,664],[548,716],[506,662],[470,690],[452,634],[420,650],[408,602],[372,612],[360,560],[322,526],[286,478],[236,460],[196,442],[160,426],[136,418]];
+const sideWolf=(fill,cut,ox=0,oy=0,sc=1)=>{ g.save(); g.translate(ox,oy); g.translate(C,C); g.scale(sc,sc); g.translate(-C,-C);
+  path(SIDE); g.fillStyle=fill; g.fill();
+  g.fillStyle=cut;
+  path([[372,226],[392,140],[410,238]]); g.fill(); path([[476,236],[502,150],[508,258]]); g.fill();                // inner ears
+  path([[292,352],[318,336],[352,338],[330,356]]); g.fill();                                                          // eye
+  blade(352,338,420,300,10,-0.1); g.fill();                                                                           // eye trail
+  blade(268,350,320,326,8,0.1); g.fill();                                                                             // brow
+  path([[128,402],[146,386],[162,394],[150,412]]); g.fill();                                                          // nose
+  blade(150,420,262,440,10,-0.1); g.fill();                                                                           // mouth
+  blade(300,400,420,470,22,0.18); g.fill(); blade(330,450,450,540,22,0.18); g.fill();                                 // cheek slashes
+  blade(400,330,560,420,26,-0.18); g.fill(); blade(440,380,600,500,26,-0.15); g.fill(); blade(470,450,610,590,24,-0.12); g.fill();
+  blade(430,520,520,650,22,-0.08); g.fill(); blade(380,500,420,600,16,0.05); g.fill(); blade(520,300,640,410,18,-0.1); g.fill();
+  blade(210,372,300,360,8,0.2); g.fill();                                                                             // snout line
+  g.restore(); };
+
+// ---------- B: ornamental symmetric front head ----------
+const HALF=[[0,196],[42,212],[118,62],[160,236],[200,300],[180,322],[232,380],[190,394],[222,462],[170,470],[182,544],[130,546],[120,612],[70,600],[0,690]];
+const frontOrn=(fill,cut,ox=0,oy=0,sc=1)=>{ g.save(); g.translate(C+ox,oy); g.scale(sc,sc); g.translate(0,(1-sc)*C/sc);
+  const P=[...HALF.map(([x,y])=>[x,y]),...HALF.slice(1,-1).reverse().map(([x,y])=>[-x,y])]; path(P); g.fillStyle=fill; g.fill();
+  g.fillStyle=cut;
+  for(const s of [-1,1]){ const X=(x)=>x*s;
+    path([[X(56),206],[X(112),98],[X(138),236]]); g.fill();                                   // inner ear
+    path([[X(32),352],[X(92),318],[X(112),326],[X(70),362]]); g.fill();                       // eye
+    g.save(); g.scale(s,1); blade(22,300,120,260,12,0.15); g.fill(); blade(120,340,190,300,12,0.1); g.fill();       // brow + temple
+    blade(40,260,90,210,10,0.05); g.fill(); blade(100,400,200,380,16,-0.1); g.fill(); blade(90,450,180,470,16,-0.1); g.fill();
+    blade(70,500,150,540,14,-0.1); g.fill(); blade(40,560,100,600,12,-0.05); g.fill(); blade(150,250,200,300,10,0.1); g.fill(); g.restore(); }
+  path([[0,220],[18,250],[0,330],[-18,250]]); g.fill();                                         // forehead diamond
+  path([[-46,540],[46,540],[30,566],[0,578],[-30,566]]); g.fill();                              // nose
+  path([[0,580],[6,612],[0,640],[-6,612]]); g.fill();
+  g.restore(); };
+
+// ---------- C: engraved howling wolf + moon ----------
+const HOWL=[[150,700],[120,690],[96,670],[130,660],[176,654],[204,620],[212,560],[226,500],[250,440],[276,396],[290,350],[300,300],[310,260],[300,212],[322,150],[340,210],[356,206],[386,160],[424,96],[438,104],[430,124],[408,150],[432,146],[402,186],[382,214],[376,244],[388,262],[372,272],[386,292],[368,300],[380,322],[362,336],[370,400],[372,520],[378,640],[384,684],[408,700],[346,702],[342,600],[326,520],[314,560],[312,640],[322,690],[338,702],[272,702],[262,640],[244,610],[230,660],[248,700]];
+const engraveFill=(clipFn,base,strokeCol,angleFn,density=2600,len=16)=>{ g.save(); clipFn(); g.clip(); g.fillStyle=base; g.fillRect(0,0,800,800);
+  g.strokeStyle=strokeCol; g.lineCap="round"; for(let i=0;i<density;i++){ const x=rnd()*800, y=rnd()*800, a=angleFn(x,y), l=len*(0.5+rnd()); g.lineWidth=1+rnd()*1.6; g.beginPath(); g.moveTo(x,y); g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l); g.stroke(); } g.restore(); };
+const moonEngraved=(x,y,r,light,dark)=>{ g.beginPath(); g.arc(x,y,r,0,TAU); g.fillStyle=light; g.fill();
+  g.save(); g.beginPath(); g.arc(x,y,r,0,TAU); g.clip(); g.fillStyle=dark;
+  for(let i=0;i<5000;i++){ const a=rnd()*TAU, d=Math.sqrt(rnd())*r, px=x+Math.cos(a)*d, py=y+Math.sin(a)*d; const edge=d/r; const crater=Math.sin(px*0.035)*Math.cos(py*0.03)+Math.sin((px+py)*0.02);
+    if(rnd()<0.12+edge*edge*0.55+(crater>0.9?0.35:0)){ g.beginPath(); g.arc(px,py,0.9+rnd()*1.3,0,TAU); g.fill(); } }
+  g.restore(); g.beginPath(); g.arc(x,y,r,0,TAU); g.lineWidth=3; g.strokeStyle=dark; g.stroke(); };
+const pine=(x,base,h,col)=>{ g.fillStyle=col; for(let k=0;k<5;k++){ const y=base-h+k*h*0.2, w=h*(0.12+k*0.07); path([[x,y-h*0.12],[x+w,y+h*0.16],[x-w,y+h*0.16]]); g.fill(); } g.fillRect(x-3,base-h*0.08,6,h*0.1); };
+const stars=(n,col,avoid)=>{ g.fillStyle=col; for(let i=0;i<n;i++){ const x=rnd()*800,y=rnd()*520; if(avoid&&avoid(x,y)) continue; const r=1+rnd()*2.5; g.beginPath(); g.arc(x,y,r,0,TAU); g.fill(); if(r>3){ g.fillRect(x-7,y-0.8,14,1.6); g.fillRect(x-0.8,y-7,1.6,14);} } };
+const howlScene=(paper,ink,moonLight)=>{
+  g.fillStyle=paper; g.fillRect(0,0,800,800);
+  stars(140,ink,(x,y)=>Math.hypot(x-430,y-300)<250);
+  moonEngraved(430,300,230,moonLight,ink);
+  engraveFill(()=>path(HOWL),paper,ink,(x,y)=>Math.PI/2+0.5+Math.sin(y*0.02)*0.3,5200,14);
+  path(HOWL); g.lineWidth=4; g.strokeStyle=ink; g.lineJoin="round"; g.stroke();
+  g.fillStyle=ink; path([[372,140],[392,150],[384,160]]); g.fill();                     // eye
+  for(const [x,h] of [[90,180],[150,140],[620,200],[690,150],[740,120],[560,120]]) pine(x,720,h,ink);
+  g.fillStyle=ink; g.fillRect(0,712,800,8); };
+
+// ---------- D: sketch with ink splatter ----------
+const splatter=(col,cx,cy,rad,n)=>{ g.fillStyle=col; for(let i=0;i<n;i++){ const a=rnd()*TAU, d=rad*Math.pow(rnd(),0.6); const r=0.8+Math.pow(rnd(),3)*16; g.beginPath(); g.arc(cx+Math.cos(a)*d,cy+Math.sin(a)*d,r,0,TAU); g.fill(); } };
+
+g.save(); g.beginPath(); g.arc(C,C,400,0,TAU); g.clip();
+const GOLD="#E3B65A", BLACK="#111114";
+switch(idx){
+  case 10: { g.clearRect(0,0,800,800); g.beginPath(); g.arc(C,C,396,0,TAU); g.fillStyle="#111114"; g.fill(); g.beginPath(); g.arc(C,C,372,0,TAU); g.lineWidth=18; g.strokeStyle=GOLD; g.stroke(); sideWolf(GOLD,"#111114",14,4,0.86); break; }
+  case 11: { g.clearRect(0,0,800,800); sideWolf("#FFFFFF","rgba(0,0,0,0)",0,0,1.0); break; }
+  case 0: { g.fillStyle=BLACK; g.fillRect(0,0,800,800); sideWolf(GOLD,BLACK,10,0,0.95); break; }                         // tribal gold on black
+  case 1: { g.fillStyle="#0F0F14"; g.fillRect(0,0,800,800); g.beginPath(); g.arc(C,C,340,0,TAU); g.lineWidth=6; g.strokeStyle=GOLD; g.stroke(); g.beginPath(); g.arc(C,C,316,0,TAU); g.lineWidth=2; g.stroke();
+            ring("HISTORA",364,46,true,GOLD); ring("ORIGINALS",364,40,false,GOLD); sideWolf(GOLD,"#0F0F14",20,10,0.72); break; }   // tribal in coin ring
+  case 2: { g.fillStyle="#F1ECE2"; g.fillRect(0,0,800,800); frontOrn(BLACK,"#F1ECE2",0,0,1.0); break; }                     // ornamental black on paper
+  case 3: { g.fillStyle="#13213C"; g.fillRect(0,0,800,800); g.beginPath(); g.arc(C,C,340,0,TAU); g.lineWidth=6; g.strokeStyle=GOLD; g.stroke();
+            ring("HISTORA",364,46,true,GOLD); ring("ORIGINALS",364,40,false,GOLD); frontOrn(GOLD,"#13213C",0,30,0.78); break; }   // ornamental gold on navy
+  case 4: { howlScene("#F4F1EA","#16161A","#FFFFFF"); break; }                                                              // engraved moon howl
+  case 5: { g.fillStyle="#0E1424"; g.fillRect(0,0,800,800); seed=21; g.save(); g.beginPath(); g.arc(C,C,312,0,TAU); g.clip(); howlScene("#0E1424","#E8E2D0","#1C2438"); g.restore();
+            g.beginPath(); g.arc(C,C,316,0,TAU); g.lineWidth=6; g.strokeStyle=GOLD; g.stroke(); ring("HISTORA",360,46,true,GOLD); ring("ORIGINALS",360,40,false,GOLD); break; } // inverted night coin
+  case 6: { g.fillStyle="#F3F0EA"; g.fillRect(0,0,800,800); seed=5; splatter("#16161A",300,420,330,420);
+            g.save(); g.translate(30,0); engraveFill(()=>path(SIDE),"#F3F0EA","#2A2A30",(x,y)=>0.9+Math.sin(x*0.01+y*0.013)*0.5,6500,18); path(SIDE); g.lineWidth=3; g.strokeStyle="#16161A"; g.stroke();
+            g.fillStyle="#16161A"; path([[292,352],[318,336],[352,338],[330,356]]); g.fill(); path([[128,402],[146,386],[162,394],[150,412]]); g.fill(); blade(150,420,262,440,8,-0.1); g.fill(); g.restore(); break; } // sketch + splatter
+}
+g.restore();
+window.done=true;
+</script></body></html>

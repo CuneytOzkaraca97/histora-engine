@@ -1,0 +1,9 @@
+<html><body style="margin:0"><canvas id="c" width="600" height="1000"></canvas>
+<script type="module">
+import { Pen, bodyFront } from "./cast.js";
+const g=document.getElementById('c').getContext('2d'); g.fillStyle="#fff"; g.fillRect(0,0,600,1000);
+bodyFront(new Pen(g),{jacket:"#888",pants:"#555",boots:"#333",skin:"#ffe2c2"},{mode:"stand",expr:"neutral",seed:7});
+const d=g.getImageData(0,0,600,1000).data; let minx=600,maxx=0,miny=1000,maxy=0;
+for(let y=0;y<1000;y++)for(let x=0;x<600;x++){const i=(y*600+x)*4; if(Math.abs(d[i]-255)<8&&Math.abs(d[i+1]-226)<8&&Math.abs(d[i+2]-194)<8){minx=Math.min(minx,x);maxx=Math.max(maxx,x);miny=Math.min(miny,y);maxy=Math.max(maxy,y);}}
+window.res=[minx,maxx,miny,maxy]; window.done=true;
+</script></body></html>

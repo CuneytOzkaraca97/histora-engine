@@ -1,0 +1,26 @@
+<html><body style="margin:0;background:#cfe3ea"><canvas id="c" width="2400" height="2000"></canvas>
+<script type="module">
+import { Pen, emu, lewis, crate, whiteFlag, placard, bodyFront, bodySide, fxQuestion } from "./cast.js";
+const cv=document.getElementById('c'), g=cv.getContext('2d');
+const SOLDIER={jacket:"#9b8a5a",pants:"#7c6f4a",boots:"#4a3426",hat:"slouch",cap:"#8f7a50",upbrim:true,belt:"#6b5a3a",buttons:"#c9b46a",skin:"#f5c9a0"};
+const FARMER={jacket:"#4f78a8",pants:"#5a4a3a",boots:"#4a3426",hat:"slouch",cap:"#7a5a3a",skin:"#ecd0b6",moustache:"#8a8a8a"};
+const MAJOR={jacket:"#9b8a5a",pants:"#7c6f4a",boots:"#3a2a1e",hat:"cap",cap:"#8f7a50",moustache:"#4a3020",build:"stout",skin:"#ffe2c2",buttons:"#e8c45a"};
+const cell=(i,fn,w=600)=>{const x=(i%6)*400,y=Math.floor(i/6)*660;g.save();g.translate(x,y);g.scale(400/w*0.95,660/1000*0.95);const p=new Pen(g);fn(p);g.restore();};
+let i=0;
+cell(i++,p=>emu(p,{mode:"stand",expr:"smug",chest:1}),800);
+cell(i++,p=>emu(p,{mode:"run",phase:0.1}),800);
+cell(i++,p=>emu(p,{mode:"run",phase:0.6,expr:"wink",look:1}),800);
+cell(i++,p=>emu(p,{mode:"peck",peck:0.9,expr:"happy"}),800);
+cell(i++,p=>emu(p,{mode:"stand",expr:"shock"}),800);
+cell(i++,p=>bodyFront(p,SOLDIER,{mode:"stand",expr:"neutral",seed:3}));
+cell(i++,p=>bodyFront(p,FARMER,{mode:"stand",expr:"stern",wave:0.5,seed:5}));
+cell(i++,p=>bodyFront(p,MAJOR,{mode:"stand",expr:"grin",seed:7}));
+cell(i++,p=>bodySide(p,SOLDIER,{mode:"march",phase:0.25,expr:"shock",seed:4}));
+cell(i++,p=>lewis(p));
+cell(i++,p=>crate(p));
+cell(i++,p=>whiteFlag(p,{t:0.3}));
+cell(i++,p=>placard(p));
+cell(i++,p=>bodyFront(p,SOLDIER,{mode:"stand",expr:"dazed",seed:9}));
+cell(i++,p=>fxQuestion(p));
+window.done=true;
+</script></body></html>
